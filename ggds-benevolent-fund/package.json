@@ -1,0 +1,31 @@
+{
+  "name": "ggds-benevolent-fund",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "analyze": "cross-env ANALYZE=true next build",
+    "clean": "rimraf .next out",
+    "vercel-build": "next build"
+  },
+  "keywords": ["ggds", "benevolent fund", "sacco", "member support", "next.js", "vercel"],
+  "author": "GGDS Development Team",
+  "license": "MIT",
+  "description": "Grand Granite Diaspora Sacco Benevolent Fund - Supporting our members in times of need through collective care and solidarity.",
+  "dependencies": {
+    "@headlessui/react": "^2.2.7",
+    "@heroicons/react": "^2.2.0",
+    "@next/swc-darwin-arm64": "^15.4.5",
+    "@tailwindcss/postcss": "^4.1.11",
+    "autoprefixer": "^10.4.21",
+    "next": "^15.4.5",
+    "postcss": "^8.5.6",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^3.4.17"
+  }
+}
