@@ -1,12 +1,6 @@
 {
   "version": 2,
   "name": "ggds-benevolent-fund",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
