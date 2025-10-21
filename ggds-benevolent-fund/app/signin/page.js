@@ -2,9 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { LockClosedIcon, UserIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
+import { authAPI } from '../../lib/api'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function SignIn() {
+  const router = useRouter()
+  const { login: setAuthUser } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,21 +21,43 @@ export default function SignIn() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!formData.email || !formData.password) {
+      toast.error('Please enter both email and password')
+      return
+    }
+
     setIsLoading(true)
-    
-    // Simulate authentication process
+
     try {
-      // Here you would typically call your authentication API
-      console.log('Sign in attempt:', formData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // For demo purposes, redirect to dashboard
-      alert('Sign in successful! Redirecting to dashboard...')
-      // In a real app, you'd use router.push('/dashboard')
+      const response = await authAPI.login(formData.email, formData.password)
+
+      if (response.user) {
+        setAuthUser(response.user)
+      }
+
+      toast.success('Welcome back! Redirecting to dashboard...')
+
+      setTimeout(() => {
+        // Redirect based on user role
+        if (response.user.role === 'admin') {
+          router.push('/admin/dashboard')
+        } else {
+          router.push('/dashboard')
+        }
+      }, 1000)
     } catch (error) {
-      alert('Sign in failed. Please check your credentials.')
+      if (error.status === 401) {
+        toast.error('Invalid email or password. Please try again.')
+      } else if (error.status === 403) {
+        toast.error('Your account is inactive. Please contact support.')
+      } else if (error.status === 422) {
+        toast.error(error.message || 'Please check your email and password.')
+      } else if (error.status === 0) {
+        toast.error('Unable to connect to server. Please check your connection.')
+      } else {
+        toast.error(error.message || 'Sign in failed. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -194,7 +222,7 @@ export default function SignIn() {
         </div>
       </div>
 
-      {/* Additional Security Info */}
+      {/* Security Info */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
           <div className="flex">
@@ -207,7 +235,7 @@ export default function SignIn() {
               </h3>
               <div className="mt-2 text-sm text-primary-700">
                 <p>
-                  Your account is protected with industry-standard security measures. 
+                  Your account is protected with industry-standard security measures.
                   Never share your login credentials with anyone.
                 </p>
               </div>

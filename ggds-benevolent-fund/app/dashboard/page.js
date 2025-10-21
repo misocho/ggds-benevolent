@@ -1,52 +1,93 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { 
-  UserIcon, 
-  DocumentTextIcon, 
-  EyeIcon, 
-  ClockIcon, 
-  CheckCircleIcon, 
+import { useRouter } from 'next/navigation'
+import {
+  UserIcon,
+  DocumentTextIcon,
+  EyeIcon,
+  ClockIcon,
+  CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
   PlusIcon,
   ChartBarIcon,
   BellIcon
 } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
+import { dashboardAPI, authAPI } from '../../lib/api'
 
 export default function Dashboard() {
-  // Mock user data - in a real app this would come from authentication context
-  const [user] = useState({
-    name: 'John Doe',
-    memberId: 'GGDS-2024-001',
-    email: 'john.doe@email.com',
-    phone: '+254 700 123 456',
-    joinDate: '2024-01-15',
-    status: 'Active'
-  })
-
-  // Mock case data
-  const [cases] = useState([
-    {
-      id: 'CASE-001',
-      type: 'Medical Emergency',
-      status: 'Under Review',
-      submittedDate: '2024-01-20',
-      description: 'Hospitalization for surgery',
-      urgency: 'high'
-    },
-    {
-      id: 'CASE-002', 
-      type: 'Bereavement',
-      status: 'Approved',
-      submittedDate: '2023-12-10',
-      description: 'Loss of family member',
-      urgency: 'medium'
-    }
-  ])
-
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [cases, setCases] = useState([])
   const [activeTab, setActiveTab] = useState('overview')
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  const loadDashboardData = async () => {
+    setIsLoading(true)
+    try {
+      // Check if user is authenticated
+      if (!authAPI.isAuthenticated()) {
+        toast.error('Please sign in to access the dashboard')
+        router.push('/signin')
+        return
+      }
+
+      // Get current user from localStorage
+      const currentUser = authAPI.getCurrentUser()
+
+      // Redirect admins to admin dashboard
+      if (currentUser && currentUser.role === 'admin') {
+        router.push('/admin/dashboard')
+        return
+      }
+
+      // Load dashboard stats
+      const dashboardStats = await dashboardAPI.getStats()
+
+      if (!dashboardStats.has_member_profile) {
+        toast.error('Please complete your member registration first')
+        router.push('/register')
+        return
+      }
+
+      setStats(dashboardStats)
+
+      // Set user data from stats
+      setUser({
+        name: dashboardStats.member_name,
+        memberId: dashboardStats.member_id,
+        email: currentUser.email,
+        status: dashboardStats.member_status
+      })
+
+      // Load cases
+      const casesData = await dashboardAPI.getCases()
+      setCases(casesData.cases || [])
+
+    } catch (error) {
+      console.error('Dashboard load error:', error)
+
+      if (error.status === 401) {
+        toast.error('Session expired. Please sign in again.')
+        router.push('/signin')
+      } else if (error.status === 404) {
+        toast.error('Please complete your member registration')
+        router.push('/register')
+      } else {
+        toast.error('Error loading dashboard data')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -60,11 +101,28 @@ export default function Dashboard() {
 
   const getUrgencyIcon = (urgency) => {
     switch (urgency) {
-      case 'high': return <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
+      case 'high':
+      case 'critical':
+        return <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
       case 'medium': return <ClockIcon className="w-4 h-4 text-yellow-500" />
       case 'low': return <CheckCircleIcon className="w-4 h-4 text-green-500" />
       default: return <ClockIcon className="w-4 h-4 text-gray-500" />
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-secondary-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user || !stats) {
+    return null
   }
 
   return (
@@ -148,7 +206,7 @@ export default function Dashboard() {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-secondary-600">Total Cases</p>
-                        <p className="text-2xl font-bold text-secondary-900">{cases.length}</p>
+                        <p className="text-2xl font-bold text-secondary-900">{stats.statistics.total_cases}</p>
                       </div>
                     </div>
                   </div>
@@ -161,7 +219,7 @@ export default function Dashboard() {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-secondary-600">Approved Cases</p>
                         <p className="text-2xl font-bold text-secondary-900">
-                          {cases.filter(c => c.status === 'Approved').length}
+                          {stats.statistics.approved_cases}
                         </p>
                       </div>
                     </div>
@@ -175,7 +233,7 @@ export default function Dashboard() {
                       <div className="ml-4">
                         <p className="text-sm font-medium text-secondary-600">Under Review</p>
                         <p className="text-2xl font-bold text-secondary-900">
-                          {cases.filter(c => c.status === 'Under Review').length}
+                          {stats.statistics.under_review_cases}
                         </p>
                       </div>
                     </div>
@@ -230,27 +288,31 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <div className="space-y-3">
-                    {cases.slice(0, 3).map((case_) => (
-                      <div key={case_.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {getUrgencyIcon(case_.urgency)}
-                            <div>
-                              <h4 className="font-medium text-secondary-900">{case_.type}</h4>
-                              <p className="text-sm text-secondary-600">{case_.description}</p>
+                    {cases.length === 0 ? (
+                      <p className="text-center text-secondary-500 py-4">No cases submitted yet</p>
+                    ) : (
+                      cases.slice(0, 3).map((case_) => (
+                        <div key={case_.case_id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              {getUrgencyIcon(case_.urgency_level)}
+                              <div>
+                                <h4 className="font-medium text-secondary-900">{case_.case_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
+                                <p className="text-sm text-secondary-600 line-clamp-1">{case_.description}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(case_.status)}`}>
+                                {case_.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </span>
+                              <button className="text-secondary-400 hover:text-secondary-600">
+                                <EyeIcon className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(case_.status)}`}>
-                              {case_.status}
-                            </span>
-                            <button className="text-secondary-400 hover:text-secondary-600">
-                              <EyeIcon className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -260,7 +322,7 @@ export default function Dashboard() {
             {activeTab === 'profile' && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-secondary-900 mb-6">Member Profile</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-1">
@@ -268,52 +330,39 @@ export default function Dashboard() {
                     </label>
                     <div className="text-secondary-900 font-medium">{user.name}</div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-1">
                       Member ID
                     </label>
                     <div className="text-secondary-900 font-medium">{user.memberId}</div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-1">
                       Email Address
                     </label>
                     <div className="text-secondary-900">{user.email}</div>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Phone Number
-                    </label>
-                    <div className="text-secondary-900">{user.phone}</div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Join Date
-                    </label>
-                    <div className="text-secondary-900">{new Date(user.joinDate).toLocaleDateString()}</div>
-                  </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-secondary-700 mb-1">
                       Status
                     </label>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {user.status}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      user.status === 'active' ? 'bg-green-100 text-green-800' :
+                      user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                     </span>
                   </div>
                 </div>
 
                 <div className="mt-8">
-                  <Link
-                    href="/register"
-                    className="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors"
-                  >
-                    Update Profile Information
-                  </Link>
+                  <p className="text-sm text-secondary-600 mb-4">
+                    To update your profile information, please contact the administrator.
+                  </p>
                 </div>
               </div>
             )}
@@ -332,33 +381,7 @@ export default function Dashboard() {
                   </Link>
                 </div>
 
-                <div className="space-y-4">
-                  {cases.map((case_) => (
-                    <div key={case_.id} className="border border-gray-200 rounded-lg p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            {getUrgencyIcon(case_.urgency)}
-                            <h4 className="font-semibold text-secondary-900">{case_.type}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(case_.status)}`}>
-                              {case_.status}
-                            </span>
-                          </div>
-                          <p className="text-secondary-600 mb-3">{case_.description}</p>
-                          <div className="flex items-center space-x-4 text-sm text-secondary-500">
-                            <span>Case ID: {case_.id}</span>
-                            <span>Submitted: {new Date(case_.submittedDate).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <button className="ml-4 p-2 text-secondary-400 hover:text-secondary-600">
-                          <EyeIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {cases.length === 0 && (
+                {cases.length === 0 ? (
                   <div className="text-center py-12">
                     <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium text-secondary-900">No cases submitted</h3>
@@ -374,6 +397,34 @@ export default function Dashboard() {
                         Submit Your First Case
                       </Link>
                     </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {cases.map((case_) => (
+                      <div key={case_.case_id} className="border border-gray-200 rounded-lg p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              {getUrgencyIcon(case_.urgency_level)}
+                              <h4 className="font-semibold text-secondary-900">
+                                {case_.case_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </h4>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(case_.status)}`}>
+                                {case_.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </span>
+                            </div>
+                            <p className="text-secondary-600 mb-3">{case_.description}</p>
+                            <div className="flex items-center space-x-4 text-sm text-secondary-500">
+                              <span>Case ID: {case_.case_id}</span>
+                              <span>Submitted: {new Date(case_.submitted_date).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          <button className="ml-4 p-2 text-secondary-400 hover:text-secondary-600">
+                            <EyeIcon className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

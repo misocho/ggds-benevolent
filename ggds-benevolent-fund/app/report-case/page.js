@@ -1,9 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { DocumentTextIcon, ExclamationTriangleIcon, CheckCircleIcon, PhoneIcon, UserIcon } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
+import { casesAPI } from '../../lib/api'
 
 export default function ReportCase() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     // Case Details
     caseType: '',
@@ -11,12 +15,12 @@ export default function ReportCase() {
     reportingReason: '',
     incidentDate: '',
     urgencyLevel: 'medium',
-    
+
     // Member Information
     memberName: '',
     memberId: '',
     relationship: '',
-    
+
     // Verification Information
     villageElder: {
       name: '',
@@ -39,7 +43,7 @@ export default function ReportCase() {
       email: '',
       relationship: ''
     },
-    
+
     // Supporting Documents
     documents: []
   })
@@ -86,35 +90,70 @@ export default function ReportCase() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     try {
-      // Here you would typically send the data to your backend
-      console.log('Case report submitted:', formData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      alert('Case report submitted successfully! You will receive a confirmation email shortly.')
-      
-      // Reset form or redirect
-      setFormData({
-        caseType: '',
-        caseDescription: '',
-        reportingReason: '',
-        incidentDate: '',
-        urgencyLevel: 'medium',
-        memberName: '',
-        memberId: '',
-        relationship: '',
-        villageElder: { name: '', phone: '', email: '' },
-        assistantChief: { name: '', phone: '', email: '' },
-        chief: { name: '', phone: '', email: '' },
-        referee: { name: '', phone: '', email: '', relationship: '' },
-        documents: []
-      })
-      setCurrentStep(1)
+      // Format data according to backend schema
+      const caseData = {
+        case_type: formData.caseType,
+        description: formData.caseDescription,
+        reporting_reason: formData.reportingReason,
+        incident_date: formData.incidentDate,
+        urgency_level: formData.urgencyLevel,
+        member_id: formData.memberId,
+        affected_member_name: formData.memberName,
+        relationship_to_reporter: formData.relationship,
+        village_elder: {
+          contact_type: 'village_elder',
+          name: formData.villageElder.name,
+          phone: formData.villageElder.phone,
+          email: formData.villageElder.email || null
+        },
+        assistant_chief: {
+          contact_type: 'assistant_chief',
+          name: formData.assistantChief.name,
+          phone: formData.assistantChief.phone,
+          email: formData.assistantChief.email || null
+        },
+        chief: {
+          contact_type: 'chief',
+          name: formData.chief.name,
+          phone: formData.chief.phone,
+          email: formData.chief.email || null
+        },
+        referee: {
+          contact_type: 'referee',
+          name: formData.referee.name,
+          phone: formData.referee.phone,
+          email: formData.referee.email || null,
+          relationship_to_member: formData.referee.relationship
+        }
+      }
+
+      // Submit case to backend
+      const response = await casesAPI.create(caseData)
+
+      toast.success(`Case ${response.case_id} submitted successfully! You will receive a confirmation email shortly.`)
+
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+
     } catch (error) {
-      alert('Error submitting case report. Please try again.')
+      console.error('Case submission error:', error)
+
+      if (error.status === 400) {
+        toast.error(error.message || 'Invalid case data. Please check your inputs.')
+      } else if (error.status === 401) {
+        toast.error('Please sign in to submit a case.')
+        router.push('/signin')
+      } else if (error.status === 404) {
+        toast.error('Member not found. Please check the member ID.')
+      } else if (error.status === 422) {
+        toast.error(error.message || 'Please check all required fields.')
+      } else {
+        toast.error(error.message || 'Error submitting case report. Please try again.')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -253,10 +292,10 @@ export default function ReportCase() {
                     >
                       <option value="">Select case type</option>
                       <option value="bereavement">Bereavement</option>
-                      <option value="medical-emergency">Medical Emergency</option>
+                      <option value="medical_emergency">Medical Emergency</option>
                       <option value="disability">Disability</option>
-                      <option value="fire-damage">Fire Damage</option>
-                      <option value="natural-disaster">Natural Disaster</option>
+                      <option value="fire_damage">Fire Damage</option>
+                      <option value="natural_disaster">Natural Disaster</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
