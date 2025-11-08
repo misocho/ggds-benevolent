@@ -83,13 +83,10 @@ const nextConfig = {
         }
       }
     }
-    
+
     return config
   },
-  
-  // Allowed dev origins for cross-origin requests
-  allowedDevOrigins: ['127.0.0.1'],
-  
+
   // Redirects (if needed)
   async redirects() {
     return [
