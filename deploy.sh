@@ -80,7 +80,8 @@ echo ""
 
 # Create deployment package
 echo -e "${YELLOW}→${NC} Creating deployment package..."
-tar -czf /tmp/ggds-deploy.tar.gz \
+# Use --no-xattrs to prevent macOS extended attributes from corrupting files
+COPYFILE_DISABLE=1 tar -czf /tmp/ggds-deploy.tar.gz \
     --exclude='node_modules' \
     --exclude='venv' \
     --exclude='__pycache__' \
