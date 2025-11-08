@@ -20,8 +20,6 @@ class Relationship(str, enum.Enum):
     PARENT = "parent"
     BROTHER = "brother"
     SISTER = "sister"
-    HALF_BROTHER = "half_brother"
-    HALF_SISTER = "half_sister"
 
 
 class FamilyMember(Base):

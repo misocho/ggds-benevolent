@@ -8,9 +8,110 @@ from app.database import get_db
 from app.models import User, Member, Case
 from app.utils.dependencies import get_current_admin_user
 from app.schemas.case import CaseStatusUpdate, CaseResponse
-from app.schemas.member import MemberResponse
+from app.schemas.member import MemberResponse, AdminMemberCreate, AdminMemberCreateResponse
+from app.utils.member_utils import generate_member_id, generate_initial_password
+from app.utils.security import get_password_hash
 
 router = APIRouter()
+
+
+# PIVOT v2.0: Admin member creation endpoint
+@router.post("/members/create", response_model=AdminMemberCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_member_account(
+    member_data: AdminMemberCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Create a new member account (admin only)
+
+    PIVOT v2.0: Admin creates member accounts with basic info.
+    Member receives email with Member ID and initial password.
+    Member must complete profile on first login.
+
+    Steps:
+    1. Generate unique Member ID (GGDS-XXXX format)
+    2. Generate secure initial password
+    3. Create Member and User records
+    4. Send welcome email with credentials
+    5. Return member details including initial password
+    """
+    # Check if email already exists
+    existing_user = db.query(User).filter(User.email == member_data.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+
+    # Check if phone already exists
+    existing_member = db.query(Member).filter(Member.phone == member_data.phone).first()
+    if existing_member:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phone number already registered"
+        )
+
+    # Generate unique member ID
+    member_id = generate_member_id(db)
+
+    # Generate initial password
+    initial_password = generate_initial_password()
+
+    # Construct full name
+    full_name_parts = [member_data.first_name]
+    if member_data.middle_name:
+        full_name_parts.append(member_data.middle_name)
+    full_name_parts.append(member_data.surname)
+    full_name = " ".join(full_name_parts)
+
+    # Create User record
+    from app.models import UserRole
+    new_user = User(
+        email=member_data.email,
+        hashed_password=get_password_hash(initial_password),
+        is_active=True,
+        role=UserRole.MEMBER
+    )
+    db.add(new_user)
+    db.flush()  # Get user ID without committing
+
+    # Create Member record (PIVOT v2.0: profile_completed=False, is_first_login=True)
+    new_member = Member(
+        user_id=new_user.id,
+        member_id=member_id,
+        full_name=full_name,
+        email=member_data.email,
+        phone=member_data.phone,
+        status="active",
+        profile_completed=False,  # PIVOT v2.0: Must complete profile on first login
+        is_first_login=True,  # PIVOT v2.0: First login flag
+        on_probation=False,
+        join_date=date.today()
+    )
+    db.add(new_member)
+    db.commit()
+    db.refresh(new_member)
+
+    # PIVOT v2.0: Send welcome email with credentials
+    from app.services.email_service import email_service
+    await email_service.send_welcome_email(
+        to_email=member_data.email,
+        member_name=full_name,
+        member_id=member_id,
+        initial_password=initial_password
+    )
+
+    # Return response with initial password (for admin's records)
+    return AdminMemberCreateResponse(
+        id=new_member.id,
+        member_id=member_id,
+        full_name=full_name,
+        email=member_data.email,
+        phone=member_data.phone,
+        initial_password=initial_password,
+        created_at=new_member.created_at
+    )
 
 
 @router.get("/stats")

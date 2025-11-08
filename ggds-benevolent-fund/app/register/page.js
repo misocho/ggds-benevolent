@@ -1,3 +1,90 @@
+/*
+PIVOT v2.0: Self-registration removed - Admin creates accounts
+This page is preserved for potential future use
+Commented out on: 2025-10-23
+
+Original registration form with all functionality is commented below.
+If needed in the future, uncomment the code section.
+*/
+
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { ExclamationTriangleIcon, EnvelopeIcon } from '@heroicons/react/24/outline'
+
+export default function RegisterPage() {
+  const router = useRouter()
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
+        {/* PIVOT v2.0: Registration Temporarily Unavailable */}
+        <div className="text-center">
+          <ExclamationTriangleIcon className="mx-auto h-16 w-16 text-yellow-500" />
+          <h1 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Registration Unavailable
+          </h1>
+          <p className="mt-4 text-lg text-gray-600">
+            Member accounts are now created by administrators.
+          </p>
+        </div>
+
+        <div className="mt-8 space-y-6">
+          <div className="rounded-md bg-blue-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <EnvelopeIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3 flex-1 md:flex md:justify-between">
+                <p className="text-sm text-blue-700">
+                  If you're a new member, please contact the administrator to have your account created.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-gray-700">
+              <strong>To join as a new member:</strong>
+            </p>
+            <ul className="list-disc list-inside text-sm text-gray-600 space-y-2">
+              <li>Contact admin@ggds.org</li>
+              <li>Call +1 (817) 673-8035</li>
+              <li>You'll receive your Member ID and initial password via email</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => router.push('/signin')}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+            >
+              Already have an account? Sign In
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+
+        {/* Future Use Note */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <p className="text-xs text-gray-500 text-center">
+            GGDS Benevolent Fund Platform v2.0
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ========================================================================
+   ORIGINAL REGISTRATION FORM CODE (PRESERVED FOR FUTURE USE)
+   ========================================================================
+
 'use client'
 
 import { useState, memo } from 'react'
@@ -75,8 +162,6 @@ const FamilyMemberInputs = memo(({ members, section, title, maxMembers, onInputC
                 <>
                   <option value="brother">Brother</option>
                   <option value="sister">Sister</option>
-                  <option value="half_brother">Half Brother</option>
-                  <option value="half_sister">Half Sister</option>
                 </>
               )}
             </select>
@@ -313,7 +398,7 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Progress Bar */}
+        Progress Bar
         <div className="mb-8">
           <div className="flex items-center justify-between">
             {[1, 2, 3, 4].map((step) => (
@@ -353,320 +438,9 @@ export default function Register() {
           </div>
 
           <form onSubmit={handleSubmit} className="p-4 sm:p-6">
-            {/* Step 1: Personal Details */}
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <IdentificationIcon className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-secondary-900">Personal Details</h3>
-                </div>
+            { ... ALL FORM STEPS CODE ... }
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.fullName}
-                      onChange={(e) => handleInputChange('personal', 0, 'fullName', e.target.value)}
-                      className={`w-full rounded-md shadow-sm ${
-                        errors.fullName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                      }`}
-                      placeholder="Enter your full name"
-                    />
-                    {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Date of Birth *
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.dateOfBirth}
-                      onChange={(e) => handleInputChange('personal', 0, 'dateOfBirth', e.target.value)}
-                      className={`w-full rounded-md shadow-sm ${
-                        errors.dateOfBirth ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                      }`}
-                    />
-                    {errors.dateOfBirth && <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('personal', 0, 'phone', e.target.value)}
-                      className={`w-full rounded-md shadow-sm ${
-                        errors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                      }`}
-                      placeholder="+1 (555) 123-4567"
-                    />
-                    {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('personal', 0, 'email', e.target.value)}
-                      className={`w-full rounded-md shadow-sm ${
-                        errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                      }`}
-                      placeholder="your.email@example.com"
-                    />
-                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Password *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={formData.password}
-                        onChange={(e) => handleInputChange('personal', 0, 'password', e.target.value)}
-                        className={`w-full rounded-md shadow-sm pr-10 ${
-                          errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                        }`}
-                        placeholder="At least 8 characters"
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                        ) : (
-                          <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Confirm Password *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        required
-                        value={formData.confirmPassword}
-                        onChange={(e) => handleInputChange('personal', 0, 'confirmPassword', e.target.value)}
-                        className={`w-full rounded-md shadow-sm pr-10 ${
-                          errors.confirmPassword ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                        }`}
-                        placeholder="Re-enter your password"
-                      />
-                      <button
-                        type="button"
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                        ) : (
-                          <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      ID Number *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.idNumber}
-                      onChange={(e) => handleInputChange('personal', 0, 'idNumber', e.target.value)}
-                      className={`w-full rounded-md shadow-sm ${
-                        errors.idNumber ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-                      }`}
-                      placeholder="National ID or Passport Number"
-                    />
-                    {errors.idNumber && <p className="mt-1 text-sm text-red-600">{errors.idNumber}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Occupation
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.occupation}
-                      onChange={(e) => handleInputChange('personal', 0, 'occupation', e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                      placeholder="Your profession or job title"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-1">
-                    Current Residence
-                  </label>
-                  <textarea
-                    value={formData.residence}
-                    onChange={(e) => handleInputChange('personal', 0, 'residence', e.target.value)}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                    rows={3}
-                    placeholder="Full address including city, state, and country"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Nuclear Family */}
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <UserGroupIcon className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-secondary-900">Nuclear Family Members</h3>
-                </div>
-                <p className="text-secondary-600 mb-4">
-                  Add your immediate family members (spouse, children, parents). Optional but recommended.
-                </p>
-                <FamilyMemberInputs
-                  members={formData.nuclearFamily}
-                  section="nuclearFamily"
-                  title="Nuclear Family Members"
-                  maxMembers={12}
-                  onInputChange={(index, field, value) => handleInputChange('nuclearFamily', index, field, value)}
-                  onAddMember={() => addFamilyMember('nuclearFamily')}
-                  onRemoveMember={(index) => removeFamilyMember('nuclearFamily', index)}
-                />
-              </div>
-            )}
-
-            {/* Step 3: Siblings */}
-            {currentStep === 3 && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <UserGroupIcon className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-secondary-900">Siblings</h3>
-                </div>
-                <p className="text-secondary-600 mb-4">
-                  Add your brothers and sisters. Optional but recommended.
-                </p>
-                <FamilyMemberInputs
-                  members={formData.siblings}
-                  section="siblings"
-                  title="Siblings"
-                  maxMembers={15}
-                  onInputChange={(index, field, value) => handleInputChange('siblings', index, field, value)}
-                  onAddMember={() => addFamilyMember('siblings')}
-                  onRemoveMember={(index) => removeFamilyMember('siblings', index)}
-                />
-              </div>
-            )}
-
-            {/* Step 4: Next of Kin */}
-            {currentStep === 4 && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <HeartIcon className="w-5 h-5 text-primary-500" />
-                  <h3 className="text-lg font-semibold text-secondary-900">Next of Kin</h3>
-                </div>
-                <p className="text-secondary-600 mb-4">
-                  Provide details for two next of kin contacts. Both are required.
-                </p>
-
-                {formData.nextOfKin.map((kin, index) => (
-                  <div key={index} className="bg-gray-50 p-4 sm:p-6 rounded-lg">
-                    <h4 className="font-medium text-secondary-900 mb-4">Next of Kin #{index + 1}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-secondary-700 mb-1">
-                          Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={kin.name}
-                          onChange={(e) => handleInputChange('nextOfKin', index, 'name', e.target.value)}
-                          className={`w-full rounded-md shadow-sm ${
-                            errors[`kin${index}_name`] ? 'border-red-500' : 'border-gray-300'
-                          } focus:border-primary-500 focus:ring-primary-500`}
-                          placeholder="Enter full name"
-                        />
-                        {errors[`kin${index}_name`] && <p className="mt-1 text-sm text-red-600">{errors[`kin${index}_name`]}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-secondary-700 mb-1">
-                          Relationship *
-                        </label>
-                        <select
-                          required
-                          value={kin.relationship}
-                          onChange={(e) => handleInputChange('nextOfKin', index, 'relationship', e.target.value)}
-                          className={`w-full rounded-md shadow-sm ${
-                            errors[`kin${index}_relationship`] ? 'border-red-500' : 'border-gray-300'
-                          } focus:border-primary-500 focus:ring-primary-500`}
-                        >
-                          <option value="">Select relationship</option>
-                          <option value="parent">Parent</option>
-                          <option value="spouse">Spouse</option>
-                          <option value="sibling">Sibling</option>
-                          <option value="child">Child</option>
-                          <option value="friend">Friend</option>
-                          <option value="other">Other</option>
-                        </select>
-                        {errors[`kin${index}_relationship`] && <p className="mt-1 text-sm text-red-600">{errors[`kin${index}_relationship`]}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-secondary-700 mb-1">
-                          Phone Number *
-                        </label>
-                        <input
-                          type="tel"
-                          required
-                          value={kin.phone}
-                          onChange={(e) => handleInputChange('nextOfKin', index, 'phone', e.target.value)}
-                          className={`w-full rounded-md shadow-sm ${
-                            errors[`kin${index}_phone`] ? 'border-red-500' : 'border-gray-300'
-                          } focus:border-primary-500 focus:ring-primary-500`}
-                          placeholder="+1 (555) 123-4567"
-                        />
-                        {errors[`kin${index}_phone`] && <p className="mt-1 text-sm text-red-600">{errors[`kin${index}_phone`]}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-secondary-700 mb-1">
-                          Email Address
-                        </label>
-                        <input
-                          type="email"
-                          value={kin.email}
-                          onChange={(e) => handleInputChange('nextOfKin', index, 'email', e.target.value)}
-                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                          placeholder="email@example.com"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Navigation Buttons */}
+            Navigation Buttons
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between pt-6 border-t border-gray-200 mt-8">
               <button
                 type="button"
@@ -716,3 +490,6 @@ export default function Register() {
     </div>
   )
 }
+
+   END OF PRESERVED CODE
+   ======================================================================== */

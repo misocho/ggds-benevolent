@@ -211,10 +211,20 @@ async def update_case_status(
     if status_update.reviewer_notes:
         case.reviewer_notes = status_update.reviewer_notes
 
+    # Override duration if provided
+    if hasattr(status_update, 'duration_days') and status_update.duration_days:
+        case.duration_days = status_update.duration_days
+
     # Set reviewed date if status changed from pending
     if case.status != "pending" and case.reviewed_date is None:
         from datetime import date
         case.reviewed_date = date.today()
+
+    # When case is approved, set start_date and due_date
+    if case.status == "approved" and case.start_date is None:
+        from datetime import date, timedelta
+        case.start_date = date.today() + timedelta(days=1)  # Starts tomorrow
+        case.due_date = case.start_date + timedelta(days=case.duration_days)
 
     db.commit()
     db.refresh(case)

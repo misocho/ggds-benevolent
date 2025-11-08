@@ -3,12 +3,16 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.database import get_db
-from app.models import User, Member
+from app.models import User, Member, FamilyMember, NextOfKin, CoveredPerson
+from app.models.member import MemberStatus
+from app.models.family_member import FamilyType
 from app.schemas.member import (
     MemberCreate,
     MemberUpdate,
     MemberResponse,
-    MemberDetailResponse
+    MemberDetailResponse,
+    ProfileCompletionData,
+    ProfileCompletionResponse
 )
 from app.utils.dependencies import get_current_user, get_current_admin_user
 from app.services.member_service import create_member_registration
@@ -205,3 +209,115 @@ async def delete_member(
     db.commit()
 
     return None
+
+
+# PIVOT v2.0: Profile completion endpoint
+@router.post("/complete-profile", response_model=ProfileCompletionResponse)
+async def complete_member_profile(
+    profile_data: ProfileCompletionData,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Complete member profile after first login (PIVOT v2.0 flow)
+
+    - Updates personal details (DOB, ID, occupation, residence)
+    - Adds parents (optional, max 2)
+    - Adds nuclear family (spouse/children, optional)
+    - Adds siblings (optional)
+    - Adds next of kin (required, 1-2)
+    - Locks profile data as immutable JSON
+    - Activates member status
+    """
+    # Get existing member record (created by admin)
+    member = db.query(Member).filter(Member.user_id == current_user.id).first()
+
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member record not found. Please contact administrator."
+        )
+
+    # Check if profile already completed
+    if member.profile_completed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Profile already completed. Contact administrator to make changes."
+        )
+
+    # Update personal details
+    member.date_of_birth = profile_data.personal_details.date_of_birth
+    member.id_number = profile_data.personal_details.id_number
+    member.occupation = profile_data.personal_details.occupation
+    member.residence = profile_data.personal_details.residence
+
+    # Add parents (as nuclear family with parent relationship)
+    for parent in profile_data.parents:
+        family_member = FamilyMember(
+            member_id=member.id,
+            family_type=FamilyType.NUCLEAR,
+            name=parent.name,
+            relationship="parent",
+            date_of_birth=parent.date_of_birth
+        )
+        db.add(family_member)
+
+    # Add nuclear family members (spouse/children)
+    for fm in profile_data.nuclear_family:
+        family_member = FamilyMember(
+            member_id=member.id,
+            family_type=FamilyType.NUCLEAR,
+            name=fm.name,
+            relationship=fm.relationship,
+            date_of_birth=fm.date_of_birth
+        )
+        db.add(family_member)
+
+    # Add siblings
+    for sibling in profile_data.siblings:
+        family_member = FamilyMember(
+            member_id=member.id,
+            family_type=FamilyType.SIBLING,
+            name=sibling.name,
+            relationship=sibling.relationship,
+            date_of_birth=sibling.date_of_birth
+        )
+        db.add(family_member)
+
+    # Add covered persons (PIVOT v2.0: Insured individuals)
+    for cp in profile_data.covered_persons:
+        covered_person = CoveredPerson(
+            member_id=member.id,
+            name=cp.name,
+            relationship=cp.relationship,
+            date_of_birth=cp.date_of_birth,
+            id_number=cp.id_number
+        )
+        db.add(covered_person)
+
+    # Add next of kin (PIVOT v2.0: Single next of kin with percentage)
+    next_of_kin = NextOfKin(
+        member_id=member.id,
+        name=profile_data.next_of_kin.name,
+        relationship=profile_data.next_of_kin.relationship,
+        phone=profile_data.next_of_kin.phone,
+        email=profile_data.next_of_kin.email,
+        percentage=profile_data.next_of_kin.percentage
+    )
+    db.add(next_of_kin)
+
+    # Store complete profile data as immutable JSON
+    member.profile_data = profile_data.model_dump(mode='json')
+    member.profile_completed = True
+    member.is_first_login = False
+    member.status = MemberStatus.ACTIVE
+
+    db.commit()
+    db.refresh(member)
+
+    return ProfileCompletionResponse(
+        success=True,
+        message="Profile completed successfully",
+        member_id=member.member_id,
+        profile_completed=True
+    )

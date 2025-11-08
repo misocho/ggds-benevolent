@@ -13,7 +13,9 @@ import {
   ExclamationTriangleIcon,
   PlusIcon,
   ChartBarIcon,
-  BellIcon
+  BellIcon,
+  ExclamationCircleIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { dashboardAPI, authAPI } from '../../lib/api'
@@ -23,6 +25,7 @@ export default function Dashboard() {
   const [user, setUser] = useState(null)
   const [stats, setStats] = useState(null)
   const [cases, setCases] = useState([])
+  const [coveredPersons, setCoveredPersons] = useState([])
   const [activeTab, setActiveTab] = useState('overview')
   const [isLoading, setIsLoading] = useState(true)
 
@@ -71,6 +74,18 @@ export default function Dashboard() {
       // Load cases
       const casesData = await dashboardAPI.getCases()
       setCases(casesData.cases || [])
+
+      // Load covered persons
+      const token = localStorage.getItem('access_token')
+      const coveredPersonsResponse = await fetch('http://localhost:8000/api/covered-persons', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (coveredPersonsResponse.ok) {
+        const coveredPersonsData = await coveredPersonsResponse.json()
+        setCoveredPersons(coveredPersonsData)
+      }
 
     } catch (error) {
       console.error('Dashboard load error:', error)
@@ -240,6 +255,106 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                {/* Current Active Case */}
+                {cases.find(c => c.status === 'approved' && c.due_date) && (
+                  <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg shadow-sm p-6 border border-primary-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <ExclamationCircleIcon className="w-6 h-6 text-primary-600" />
+                          <h3 className="text-lg font-semibold text-secondary-900">Current Active Case</h3>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Approved
+                          </span>
+                        </div>
+                        {(() => {
+                          const activeCase = cases.find(c => c.status === 'approved' && c.due_date)
+                          const dueDate = new Date(activeCase.due_date)
+                          const today = new Date()
+                          const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24))
+
+                          return (
+                            <>
+                              <p className="text-secondary-700 mb-4">
+                                <strong>{activeCase.case_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</strong>
+                                {' - '}{activeCase.description.substring(0, 100)}...
+                              </p>
+                              <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                  <p className="text-sm text-secondary-600">Start Date</p>
+                                  <p className="font-medium text-secondary-900">
+                                    {new Date(activeCase.start_date).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-secondary-600">Due Date</p>
+                                  <p className="font-medium text-secondary-900">
+                                    {dueDate.toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="bg-white rounded-lg p-4 border border-primary-200">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm font-medium text-secondary-700">Time Remaining</span>
+                                  <span className={`text-lg font-bold ${daysLeft <= 3 ? 'text-red-600' : daysLeft <= 7 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                    {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full ${daysLeft <= 3 ? 'bg-red-500' : daysLeft <= 7 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                    style={{ width: `${Math.max(0, Math.min(100, (daysLeft / activeCase.duration_days) * 100))}%` }}
+                                  ></div>
+                                </div>
+                                <p className="text-xs text-secondary-500 mt-2">
+                                  {activeCase.duration_days} day collection period
+                                </p>
+                              </div>
+                            </>
+                          )
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cases Under Review */}
+                {cases.find(c => c.status === 'under_review' || c.status === 'pending') && (
+                  <div className="bg-yellow-50 rounded-lg shadow-sm p-6 border border-yellow-200">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <ClockIcon className="w-6 h-6 text-yellow-600" />
+                      <h3 className="text-lg font-semibold text-secondary-900">Cases Under Review</h3>
+                    </div>
+                    {cases
+                      .filter(c => c.status === 'under_review' || c.status === 'pending')
+                      .slice(0, 2)
+                      .map(reviewCase => (
+                        <div key={reviewCase.case_id} className="bg-white rounded-lg p-4 border border-yellow-100 mb-3 last:mb-0">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <span className="font-medium text-secondary-900">
+                                  {reviewCase.case_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(reviewCase.status)}`}>
+                                  {reviewCase.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                </span>
+                              </div>
+                              <p className="text-sm text-secondary-600 mb-2">
+                                Submitted: {new Date(reviewCase.submitted_date).toLocaleDateString()}
+                              </p>
+                              <div className="bg-blue-50 border border-blue-100 rounded p-2">
+                                <p className="text-xs text-blue-800">
+                                  ℹ️ Once approved, contributions will be collected for <strong>{reviewCase.duration_days || 14} days</strong> starting the next day.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
                 {/* Quick Actions */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <h3 className="text-lg font-semibold text-secondary-900 mb-4">Quick Actions</h3>
@@ -315,54 +430,168 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
+
+                {/* Covered Persons */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">Covered Persons</h3>
+                  {coveredPersons.length === 0 ? (
+                    <p className="text-center text-secondary-500 py-4">No covered persons registered</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {coveredPersons.map((person) => (
+                        <div key={person.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-secondary-900">{person.name}</p>
+                              <p className="text-sm text-secondary-600">
+                                {person.relationship}
+                                {person.date_of_birth && ` • Born ${new Date(person.date_of_birth).toLocaleDateString()}`}
+                              </p>
+                              {person.id_number && (
+                                <p className="text-xs text-secondary-500 mt-1">ID: {person.id_number}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-secondary-900 mb-6">Member Profile</h3>
+              <div className="space-y-6">
+                {/* Profile Completion Alert - Show if profile not completed */}
+                {stats && !stats.profile_completed && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg">
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        <ExclamationCircleIcon className="h-6 w-6 text-yellow-400" />
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <h3 className="text-sm font-medium text-yellow-800 mb-2">
+                          Complete Your Profile
+                        </h3>
+                        <p className="text-sm text-yellow-700 mb-4">
+                          Your profile is incomplete. Please complete your profile to activate your membership
+                          and access all features including case submission and contribution tracking.
+                        </p>
+                        <Link
+                          href="/complete-profile"
+                          className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
+                        >
+                          Complete Profile Now
+                          <ArrowRightIcon className="w-4 h-4 ml-2" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Full Name
-                    </label>
-                    <div className="text-secondary-900 font-medium">{user.name}</div>
+                {/* Profile Information */}
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold text-secondary-900">Member Profile</h3>
+                    {stats && stats.profile_completed && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircleIcon className="w-4 h-4 mr-1" />
+                        Profile Completed
+                      </span>
+                    )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Member ID
-                    </label>
-                    <div className="text-secondary-900 font-medium">{user.memberId}</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-1">
+                        Full Name
+                      </label>
+                      <div className="text-secondary-900 font-medium">{user.name}</div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-1">
+                        Member ID
+                      </label>
+                      <div className="text-secondary-900 font-medium">{user.memberId}</div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-1">
+                        Email Address
+                      </label>
+                      <div className="text-secondary-900">{user.email}</div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 mb-1">
+                        Status
+                      </label>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.status === 'active' ? 'bg-green-100 text-green-800' :
+                        user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                      </span>
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Email Address
-                    </label>
-                    <div className="text-secondary-900">{user.email}</div>
-                  </div>
+                  {/* Additional profile details if completed */}
+                  {stats && stats.profile_completed && stats.profile_data && (
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <h4 className="text-md font-semibold text-secondary-900 mb-4">Additional Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {stats.profile_data.personal_details && (
+                          <>
+                            {stats.profile_data.personal_details.date_of_birth && (
+                              <div>
+                                <label className="block text-sm font-medium text-secondary-700 mb-1">
+                                  Date of Birth
+                                </label>
+                                <div className="text-secondary-900">{stats.profile_data.personal_details.date_of_birth}</div>
+                              </div>
+                            )}
+                            {stats.profile_data.personal_details.id_number && (
+                              <div>
+                                <label className="block text-sm font-medium text-secondary-700 mb-1">
+                                  ID/Passport Number
+                                </label>
+                                <div className="text-secondary-900">{stats.profile_data.personal_details.id_number}</div>
+                              </div>
+                            )}
+                            {stats.profile_data.personal_details.occupation && (
+                              <div>
+                                <label className="block text-sm font-medium text-secondary-700 mb-1">
+                                  Occupation
+                                </label>
+                                <div className="text-secondary-900">{stats.profile_data.personal_details.occupation}</div>
+                              </div>
+                            )}
+                            {stats.profile_data.personal_details.residence && (
+                              <div>
+                                <label className="block text-sm font-medium text-secondary-700 mb-1">
+                                  Residence
+                                </label>
+                                <div className="text-secondary-900">{stats.profile_data.personal_details.residence}</div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-1">
-                      Status
-                    </label>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.status === 'active' ? 'bg-green-100 text-green-800' :
-                      user.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                    </span>
+                  <div className="mt-8 pt-6 border-t border-gray-200">
+                    <p className="text-sm text-secondary-600">
+                      {stats && stats.profile_completed ? (
+                        "Your profile is locked for security. To update your information, please contact the administrator."
+                      ) : (
+                        "Complete your profile to activate your membership and unlock all features."
+                      )}
+                    </p>
                   </div>
-                </div>
-
-                <div className="mt-8">
-                  <p className="text-sm text-secondary-600 mb-4">
-                    To update your profile information, please contact the administrator.
-                  </p>
                 </div>
               </div>
             )}

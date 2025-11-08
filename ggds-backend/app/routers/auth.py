@@ -11,7 +11,9 @@ from app.schemas.auth import (
     TokenRefresh,
     UserResponse,
     PasswordResetRequest,
-    PasswordReset
+    PasswordReset,
+    PasswordChange,
+    PasswordChangeResponse
 )
 from app.utils.security import (
     verify_password,
@@ -213,3 +215,47 @@ async def reset_password(reset_data: PasswordReset, db: Session = Depends(get_db
     db.commit()
 
     return {"message": "Password has been reset successfully"}
+
+
+# PIVOT v2.0: Change password endpoint
+@router.post("/change-password", response_model=PasswordChangeResponse)
+async def change_password(
+    password_change: PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Change user password (authenticated users only)
+
+    - Verifies current password
+    - Updates to new password
+    - Useful after first login with temporary password
+    """
+    # Verify current password
+    if not verify_password(password_change.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+
+    # Ensure new password is different
+    if password_change.current_password == password_change.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from current password"
+        )
+
+    # Update password
+    current_user.hashed_password = get_password_hash(password_change.new_password)
+
+    # Mark first login as false if this was a password change
+    member = db.query(Member).filter(Member.user_id == current_user.id).first()
+    if member and member.is_first_login:
+        member.is_first_login = False
+
+    db.commit()
+
+    return PasswordChangeResponse(
+        success=True,
+        message="Password changed successfully"
+    )

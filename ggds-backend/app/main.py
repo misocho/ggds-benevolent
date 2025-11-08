@@ -18,7 +18,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url, "http://localhost:3000", "http://localhost:3001", "http://localhost:8000"],  # Frontend URLs
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -80,7 +80,7 @@ async def health_check():
 
 
 # Import and include routers
-from app.routers import auth, members, cases, dashboard, upload, admin, contributions, reports
+from app.routers import auth, members, cases, dashboard, upload, admin, contributions, reports, covered_persons
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(members.router, prefix="/api/members", tags=["Members"])
@@ -90,6 +90,7 @@ app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(contributions.router, prefix="/api/contributions", tags=["Contributions"])
 app.include_router(reports.router, prefix="/api/admin/reports", tags=["Reports"])
+app.include_router(covered_persons.router, prefix="/api/covered-persons", tags=["Covered Persons"])
 
 
 # Startup event

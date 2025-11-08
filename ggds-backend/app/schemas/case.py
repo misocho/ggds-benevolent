@@ -54,6 +54,7 @@ class CaseStatusUpdate(BaseModel):
     """Schema for updating case status (admin only)"""
     status: str  # pending, under_review, approved, rejected, closed
     reviewer_notes: Optional[str] = None
+    duration_days: Optional[int] = Field(None, ge=1, le=90)  # Override default 14 days (1-90 days)
 
 
 class CaseResponse(BaseModel):
@@ -71,6 +72,9 @@ class CaseResponse(BaseModel):
     submitted_date: date
     reviewed_date: Optional[date]
     reviewer_notes: Optional[str]
+    duration_days: int  # Case duration in days
+    start_date: Optional[date]  # When case starts (day after approval)
+    due_date: Optional[date]  # When contributions are due
     created_at: datetime
     updated_at: datetime
 

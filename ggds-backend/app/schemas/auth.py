@@ -59,3 +59,15 @@ class PasswordReset(BaseModel):
     """Schema for password reset with token"""
     token: str
     new_password: str = Field(..., min_length=8)
+
+
+class PasswordChange(BaseModel):
+    """Schema for changing password (authenticated user)"""
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
+class PasswordChangeResponse(BaseModel):
+    """Response after successful password change"""
+    success: bool
+    message: str

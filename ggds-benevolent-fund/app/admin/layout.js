@@ -74,18 +74,19 @@ const AdminLayout = ({ children }) => {
     return null
   }
 
+  // PIVOT v2.0: Updated admin navigation
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: HomeIcon },
-    { href: '/admin/cases', label: 'Cases', icon: DocumentTextIcon },
-    { href: '/admin/members', label: 'Members', icon: UsersIcon },
-    { href: '/admin/accounting', label: 'Accounting', icon: CurrencyDollarIcon },
-    { href: '/admin/reports', label: 'Reports', icon: ChartBarIcon },
+    { href: '/admin/dashboard/members', label: 'Members', icon: UsersIcon },
+    { href: '/admin/dashboard/cases', label: 'Cases', icon: DocumentTextIcon },
+    { href: '/admin/dashboard/contributions', label: 'Contributions', icon: CurrencyDollarIcon },
+    { href: '/admin/dashboard/reports', label: 'Reports', icon: ChartBarIcon },
   ]
 
   const quickActions = [
-    { label: 'Record Contribution', icon: PlusIcon, href: '/admin/accounting' },
-    { label: 'Review Cases', icon: CheckCircleIcon, href: '/admin/cases' },
-    { label: 'Add Member', icon: UserPlusIcon, href: '/admin/members' },
+    { label: 'Add Member', icon: UserPlusIcon, href: '/admin/dashboard/members' },
+    { label: 'Review Cases', icon: CheckCircleIcon, href: '/admin/dashboard/cases' },
+    { label: 'Record Contribution', icon: PlusIcon, href: '/admin/dashboard/contributions' },
   ]
 
   return (
@@ -189,7 +190,7 @@ const AdminLayout = ({ children }) => {
               <div className="flex items-center gap-4">
                 {/* Quick Stats */}
                 <Link
-                  href="/admin/cases"
+                  href="/admin/dashboard/cases"
                   className="flex items-center gap-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
                 >
                   <DocumentTextIcon className="w-4 h-4 text-yellow-600" />
@@ -200,7 +201,7 @@ const AdminLayout = ({ children }) => {
                 </Link>
 
                 <Link
-                  href="/admin/accounting"
+                  href="/admin/dashboard/contributions"
                   className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   <CurrencyDollarIcon className="w-4 h-4 text-blue-600" />

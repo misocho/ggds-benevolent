@@ -4,13 +4,11 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 
+// PIVOT v2.0: Public navigation - removed Register, Dashboard, and Report Case
 const navigation = [
   { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
-  { name: 'Register', href: '/register' },
   { name: 'Sign In', href: '/signin' },
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Report Case', href: '/report-case' },
   { name: 'FAQs', href: '/faqs' },
   { name: 'Contact', href: '/contact' },
 ]
