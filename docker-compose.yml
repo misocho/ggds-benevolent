@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ggds-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ggds_benevolent}
+      POSTGRES_USER: ${POSTGRES_USER:-ggds_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ggds-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ggds_admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: ./ggds-backend
+      dockerfile: Dockerfile
+    container_name: ggds-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8080"
+    environment:
+      # Application
+      APP_NAME: GGDS Benevolent Fund API
+      APP_ENV: production
+      DEBUG: "false"
+
+      # Database
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ggds_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ggds_benevolent}
+
+      # Security
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+
+      # Frontend URL
+      FRONTEND_URL: ${FRONTEND_URL:-http://167.172.112.115:3000}
+
+      # Email (Hostinger SMTP)
+      SMTP_HOST: smtp.hostinger.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_USE_TLS: "true"
+      EMAIL_FROM: lifeline@ggdi.net
+      ADMIN_EMAIL: lifeline@ggdi.net
+
+      # Digital Ocean Spaces
+      SPACES_REGION: sfo3
+      SPACES_BUCKET: ggds-benevolent
+      SPACES_ACCESS_KEY: ${SPACES_ACCESS_KEY}
+      SPACES_SECRET_KEY: ${SPACES_SECRET_KEY}
+
+      # Optional
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ggds-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./ggds-benevolent-fund
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://167.172.112.115:8000}
+    container_name: ggds-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://167.172.112.115:8000}
+      NEXT_PUBLIC_SITE_NAME: GGDS Benevolent Fund
+    depends_on:
+      - backend
+    networks:
+      - ggds-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy (Optional - for production with SSL)
+  nginx:
+    image: nginx:alpine
+    container_name: ggds-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - ggds-network
+    profiles:
+      - production
+
+networks:
+  ggds-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

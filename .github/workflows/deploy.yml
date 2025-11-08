@@ -1,0 +1,97 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to Digital Ocean Droplet
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Create deployment package
+        run: |
+          tar -czf ggds-deploy.tar.gz \
+            docker-compose.yml \
+            ggds-backend \
+            ggds-benevolent-fund \
+            --exclude='node_modules' \
+            --exclude='venv' \
+            --exclude='__pycache__' \
+            --exclude='.next' \
+            --exclude='.git'
+
+      - name: Upload to server
+        run: |
+          scp ggds-deploy.tar.gz ${{ secrets.DEPLOY_USER }}@${{ secrets.SERVER_IP }}:/tmp/
+
+      - name: Deploy on server
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.SERVER_IP }} << 'ENDSSH'
+          set -e
+
+          # Navigate to app directory
+          mkdir -p /opt/ggds
+          cd /opt/ggds
+
+          # Extract new code
+          tar -xzf /tmp/ggds-deploy.tar.gz
+          rm /tmp/ggds-deploy.tar.gz
+
+          # Stop existing containers
+          docker-compose down || true
+
+          # Build new images
+          docker-compose build --no-cache
+
+          # Start containers
+          docker-compose up -d
+
+          # Clean up old images
+          docker image prune -f
+
+          echo "✓ Deployment successful!"
+          ENDSSH
+
+      - name: Check deployment health
+        run: |
+          sleep 15
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.SERVER_IP }} << 'ENDSSH'
+          cd /opt/ggds
+          docker-compose ps
+
+          # Check if services are healthy
+          if docker-compose ps | grep -q "healthy"; then
+            echo "✓ All services are healthy"
+            exit 0
+          else
+            echo "⚠ Some services may not be healthy yet"
+            docker-compose logs --tail=50
+            exit 1
+          fi
+          ENDSSH
+
+      - name: Send deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✓ Deployment successful to http://${{ secrets.SERVER_IP }}:3000"
+          else
+            echo "✗ Deployment failed"
+          fi
