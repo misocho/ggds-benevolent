@@ -81,15 +81,17 @@ echo ""
 # Create deployment package
 echo -e "${YELLOW}→${NC} Creating deployment package..."
 tar -czf /tmp/ggds-deploy.tar.gz \
-    docker-compose.yml \
-    .env.production \
-    ggds-backend \
-    ggds-benevolent-fund \
     --exclude='node_modules' \
     --exclude='venv' \
     --exclude='__pycache__' \
     --exclude='.next' \
-    --exclude='.git'
+    --exclude='.git' \
+    --exclude='.env' \
+    --exclude='.env.local' \
+    docker-compose.yml \
+    .env.production \
+    ggds-backend \
+    ggds-benevolent-fund
 
 echo -e "${GREEN}✓${NC} Deployment package created"
 
