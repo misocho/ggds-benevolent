@@ -1,5 +1,6 @@
 """
-AWS S3 Service for file storage and management
+Digital Ocean Spaces Service for file storage and management
+Spaces is S3-compatible, so we use boto3 with a custom endpoint
 """
 import boto3
 from botocore.exceptions import ClientError
@@ -13,17 +14,20 @@ from app.config import settings
 
 
 class S3Service:
-    """Service for handling AWS S3 operations"""
+    """Service for handling Digital Ocean Spaces operations (S3-compatible)"""
 
     def __init__(self):
-        """Initialize S3 client"""
+        """Initialize Spaces client with Digital Ocean endpoint"""
         self.s3_client = boto3.client(
             's3',
-            aws_access_key_id=settings.aws_access_key_id,
-            aws_secret_access_key=settings.aws_secret_access_key,
-            region_name=settings.aws_region
+            aws_access_key_id=settings.spaces_access_key,
+            aws_secret_access_key=settings.spaces_secret_key,
+            endpoint_url=settings.spaces_endpoint_url,
+            region_name=settings.spaces_region
         )
-        self.bucket_name = settings.aws_s3_bucket
+        self.bucket_name = settings.spaces_bucket
+        self.endpoint_url = settings.spaces_endpoint_url
+        self.region = settings.spaces_region
 
     def upload_file(
         self,
@@ -75,8 +79,9 @@ class S3Service:
                 }
             )
 
-            # Generate file URL
-            file_url = f"https://{self.bucket_name}.s3.{settings.aws_region}.amazonaws.com/{file_key}"
+            # Generate file URL for Digital Ocean Spaces
+            # Format: https://bucket-name.region.digitaloceanspaces.com/file-key
+            file_url = f"https://{self.bucket_name}.{self.region}.digitaloceanspaces.com/{file_key}"
 
             return {
                 'file_key': file_key,
@@ -86,7 +91,7 @@ class S3Service:
             }
 
         except ClientError as e:
-            raise Exception(f"Failed to upload file to S3: {str(e)}")
+            raise Exception(f"Failed to upload file to Digital Ocean Spaces: {str(e)}")
 
     def generate_presigned_url(
         self,
@@ -172,7 +177,7 @@ class S3Service:
             )
             return True
         except ClientError as e:
-            raise Exception(f"Failed to delete file from S3: {str(e)}")
+            raise Exception(f"Failed to delete file from Digital Ocean Spaces: {str(e)}")
 
     def file_exists(self, file_key: str) -> bool:
         """
@@ -241,7 +246,7 @@ class S3Service:
                     'key': obj['Key'],
                     'size': obj['Size'],
                     'last_modified': obj['LastModified'],
-                    'url': f"https://{self.bucket_name}.s3.{settings.aws_region}.amazonaws.com/{obj['Key']}"
+                    'url': f"https://{self.bucket_name}.{self.region}.digitaloceanspaces.com/{obj['Key']}"
                 })
 
             return files
@@ -249,5 +254,5 @@ class S3Service:
             raise Exception(f"Failed to list files: {str(e)}")
 
 
-# Create global S3 service instance
+# Create global Spaces service instance
 s3_service = S3Service()

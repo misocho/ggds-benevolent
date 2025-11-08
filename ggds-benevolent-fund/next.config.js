@@ -49,13 +49,13 @@ const nextConfig = {
   reactStrictMode: true,
   
   // Build optimization
-  generateBuildId: async () => {
-    // Use timestamp for build ID to avoid caching issues
-    return `build-${Date.now()}`
-  },
+  // generateBuildId: async () => {
+  //   // Use timestamp for build ID to avoid caching issues
+  //   return `build-${Date.now()}`
+  // },
   
-  // Output settings for Vercel (removed standalone for static export)
-  // output: 'standalone',
+  // Output settings for production deployments
+  output: 'standalone',
   
   // Environment variables that should be available on the client
   env: {

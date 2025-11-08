@@ -8,13 +8,13 @@ from app.services.s3_service import s3_service
 
 class UploadService:
     """
-    File upload service with S3 integration
+    File upload service with Digital Ocean Spaces integration
     """
 
     def __init__(self):
-        self.use_s3 = True  # Always use S3 now that credentials are configured
+        self.use_spaces = True  # Always use Digital Ocean Spaces for file storage
 
-        # Fallback to local storage if S3 is not available
+        # Fallback to local storage if Digital Ocean Spaces is not available
         self.upload_dir = "uploads"
         os.makedirs(self.upload_dir, exist_ok=True)
 
@@ -24,7 +24,7 @@ class UploadService:
         folder: str = "general"
     ) -> dict:
         """
-        Upload a file to S3
+        Upload a file to Digital Ocean Spaces
 
         Args:
             file: The file to upload
@@ -59,7 +59,7 @@ class UploadService:
         await file.seek(0)
 
         try:
-            # Upload to S3
+            # Upload to Digital Ocean Spaces
             result = s3_service.upload_file(
                 file_obj=file.file,
                 filename=file.filename,
@@ -78,8 +78,8 @@ class UploadService:
             }
 
         except Exception as e:
-            # Fallback to local storage if S3 fails
-            print(f"S3 upload failed: {str(e)}. Falling back to local storage...")
+            # Fallback to local storage if Digital Ocean Spaces fails
+            print(f"Digital Ocean Spaces upload failed: {str(e)}. Falling back to local storage...")
 
             file_id = str(uuid.uuid4())
             safe_filename = f"{file_id}{file_ext}"
@@ -109,10 +109,10 @@ class UploadService:
         expiration: int = 3600
     ) -> Optional[str]:
         """
-        Generate a presigned URL for S3 object
+        Generate a presigned URL for Digital Ocean Spaces object
 
         Args:
-            s3_key: S3 object key
+            s3_key: Spaces object key
             expiration: URL expiration time in seconds (default: 1 hour)
 
         Returns:
@@ -130,21 +130,21 @@ class UploadService:
         local_path: Optional[str] = None
     ) -> bool:
         """
-        Delete a file from S3 or local storage
+        Delete a file from Digital Ocean Spaces or local storage
 
         Args:
-            s3_key: S3 object key
+            s3_key: Spaces object key
             local_path: Local file path (fallback)
 
         Returns:
             True if deletion was successful
         """
-        # Try S3 first
+        # Try Digital Ocean Spaces first
         if s3_key:
             try:
                 return s3_service.delete_file(s3_key)
             except Exception as e:
-                print(f"Failed to delete from S3: {str(e)}")
+                print(f"Failed to delete from Digital Ocean Spaces: {str(e)}")
 
         # Fallback to local storage
         if local_path and os.path.exists(local_path):

@@ -1,0 +1,220 @@
+# Digital Ocean App Platform Configuration
+# GGDS Benevolent Fund Application
+#
+# This file defines the infrastructure for deploying the GGDS Benevolent Fund
+# on Digital Ocean App Platform. It includes:
+# - Backend API (FastAPI/Python)
+# - Frontend (Next.js)
+# - PostgreSQL Database
+
+name: ggds-benevolent-fund
+region: fra
+
+# Database Configuration
+databases:
+  - name: ggds-postgres
+    engine: PG
+    version: "15"
+    production: true
+    cluster_name: ggds-db-cluster
+    db_name: ggds_benevolent
+    db_user: ggds_admin
+
+# Services Configuration
+services:
+  # Backend API Service
+  - name: ggds-backend
+    type: web
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    dockerfile_path: ggds-backend/Dockerfile
+    source_dir: ggds-backend
+    github:
+      branch: main
+      deploy_on_push: true
+
+    # Build configuration
+    build_command: pip install -r requirements.txt
+
+    # Run configuration
+    run_command: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8080
+
+    # Routes
+    routes:
+      - path: /api
+      - path: /docs
+      - path: /health
+
+    # Health check
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 60
+      period_seconds: 30
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 3
+
+    # Environment variables
+    envs:
+      # Application
+      - key: APP_NAME
+        value: GGDS Benevolent Fund API
+        scope: RUN_TIME
+
+      - key: APP_ENV
+        value: production
+        scope: RUN_TIME
+
+      - key: DEBUG
+        value: "false"
+        scope: RUN_TIME
+
+      # Database - Auto-populated by DO
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${ggds-postgres.DATABASE_URL}
+
+      # Security - Set these manually in DO dashboard
+      - key: SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: ALGORITHM
+        value: HS256
+        scope: RUN_TIME
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+        scope: RUN_TIME
+
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+        scope: RUN_TIME
+
+      # Frontend URL - Auto-populated from frontend service
+      - key: FRONTEND_URL
+        value: ${ggds-frontend.PUBLIC_URL}
+        scope: RUN_TIME
+
+      # Email Service - Hostinger SMTP (Set manually in DO dashboard)
+      - key: SMTP_HOST
+        value: smtp.hostinger.com
+        scope: RUN_TIME
+
+      - key: SMTP_PORT
+        value: "587"
+        scope: RUN_TIME
+
+      - key: SMTP_USERNAME
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: SMTP_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: SMTP_USE_TLS
+        value: "true"
+        scope: RUN_TIME
+
+      - key: EMAIL_FROM
+        value: lifeline@ggdi.net
+        scope: RUN_TIME
+
+      - key: ADMIN_EMAIL
+        value: lifeline@ggdi.net
+        scope: RUN_TIME
+
+      # Digital Ocean Spaces - Set manually in DO dashboard
+      - key: SPACES_REGION
+        value: fra1
+        scope: RUN_TIME
+
+      - key: SPACES_BUCKET
+        value: ggds-benevolent-fund-files
+        scope: RUN_TIME
+
+      - key: SPACES_ACCESS_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: SPACES_SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      # Optional monitoring
+      - key: SENTRY_DSN
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: LOG_LEVEL
+        value: INFO
+        scope: RUN_TIME
+
+    # HTTP configuration for API
+    http_port: 8080
+
+  # Frontend Next.js Service
+  - name: ggds-frontend
+    type: web
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    dockerfile_path: ggds-benevolent-fund/Dockerfile
+    source_dir: ggds-benevolent-fund
+    github:
+      branch: main
+      deploy_on_push: true
+
+    # Build configuration
+    build_command: npm install && npm run build
+
+    # Run configuration
+    run_command: npm start
+
+    # Routes
+    routes:
+      - path: /
+
+    # Health check
+    health_check:
+      http_path: /
+      initial_delay_seconds: 60
+      period_seconds: 30
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 3
+
+    # Environment variables
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: RUN_AND_BUILD_TIME
+
+      # Backend API URL - Auto-populated from backend service
+      - key: NEXT_PUBLIC_API_URL
+        value: ${ggds-backend.PUBLIC_URL}
+        scope: RUN_AND_BUILD_TIME
+
+      - key: NEXT_PUBLIC_SITE_NAME
+        value: GGDS Benevolent Fund
+        scope: RUN_AND_BUILD_TIME
+
+      - key: NEXT_PUBLIC_SITE_DESCRIPTION
+        value: Grand Granite Diaspora Sacco Benevolent Fund - Supporting our members in times of need
+        scope: RUN_AND_BUILD_TIME
+
+    # HTTP configuration
+    http_port: 3000
+
+# Static Sites (if needed)
+# static_sites: []
+
+# Workers (background jobs - if needed)
+# workers: []
+
+# Jobs (one-off tasks - if needed)
+# jobs:
+#   - name: db-migrate
+#     kind: PRE_DEPLOY
+#     source_dir: ggds-backend
+#     run_command: alembic upgrade head

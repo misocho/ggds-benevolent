@@ -1,18 +1,19 @@
 from typing import Optional
-import resend
+import aiosmtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from app.config import settings
 
 
 class EmailService:
-    """Email service using Resend"""
+    """Email service using SMTP (Hostinger)"""
 
     def __init__(self):
-        if settings.resend_api_key and settings.resend_api_key != "re_xxxxxxxxxxxxx":
-            resend.api_key = settings.resend_api_key
+        if settings.smtp_username and settings.smtp_password:
             self.configured = True
         else:
             self.configured = False
-            print("⚠️  Email service not configured. Set RESEND_API_KEY to enable email notifications.")
+            print("⚠️  Email service not configured. Set SMTP_USERNAME and SMTP_PASSWORD to enable email notifications.")
 
     async def send_email(
         self,
@@ -21,7 +22,7 @@ class EmailService:
         html_content: str
     ) -> bool:
         """
-        Send an email
+        Send an email using SMTP
 
         Args:
             to_email: Recipient email address
@@ -36,13 +37,26 @@ class EmailService:
             return False
 
         try:
-            params = {
-                "from": settings.email_from,
-                "to": [to_email],
-                "subject": subject,
-                "html": html_content
-            }
-            resend.Emails.send(params)
+            # Create message
+            message = MIMEMultipart("alternative")
+            message["From"] = settings.email_from
+            message["To"] = to_email
+            message["Subject"] = subject
+
+            # Attach HTML content
+            html_part = MIMEText(html_content, "html")
+            message.attach(html_part)
+
+            # Send email using SMTP
+            await aiosmtplib.send(
+                message,
+                hostname=settings.smtp_host,
+                port=settings.smtp_port,
+                username=settings.smtp_username,
+                password=settings.smtp_password,
+                use_tls=settings.smtp_use_tls,
+            )
+
             print(f"✉️  Email sent to {to_email}")
             return True
         except Exception as e:
@@ -53,26 +67,78 @@ class EmailService:
         self,
         to_email: str,
         member_name: str,
-        member_id: str
+        member_id: str,
+        initial_password: str = None
     ) -> bool:
-        """Send welcome email to new member"""
-        subject = "Welcome to GGDS Benevolent Fund"
-        html = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #0ec434;">Welcome to GGDS Benevolent Fund</h2>
-                    <p>Dear {member_name},</p>
-                    <p>Your registration has been successfully received!</p>
-                    <p><strong>Your Member ID:</strong> {member_id}</p>
-                    <p>You can now access your dashboard and submit support cases when needed.</p>
-                    <p>If you have any questions, please contact us at {settings.admin_email}</p>
-                    <br>
-                    <p>Best regards,<br>GGDS Benevolent Fund Team</p>
-                </div>
-            </body>
-        </html>
         """
+        Send welcome email to new member
+
+        PIVOT v2.0: Includes initial password if provided (admin-created accounts)
+        """
+        subject = "Welcome to GGDS Benevolent Fund - Your Account Details"
+
+        # PIVOT v2.0: Different email for admin-created accounts
+        if initial_password:
+            html = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+                        <div style="background-color: #0ec434; padding: 20px; text-align: center;">
+                            <h1 style="color: white; margin: 0;">GGDS Benevolent Fund</h1>
+                        </div>
+                        <div style="background-color: white; padding: 30px; margin-top: 20px; border-radius: 5px;">
+                            <h2 style="color: #273171;">Welcome, {member_name}!</h2>
+                            <p>Your account has been created by the administrator. Below are your login credentials:</p>
+
+                            <div style="background-color: #f0f8ff; padding: 20px; border-left: 4px solid #0ec434; margin: 20px 0;">
+                                <p style="margin: 5px 0;"><strong>Member ID:</strong> <code style="background: #e0e0e0; padding: 5px 10px; border-radius: 3px;">{member_id}</code></p>
+                                <p style="margin: 5px 0;"><strong>Initial Password:</strong> <code style="background: #e0e0e0; padding: 5px 10px; border-radius: 3px;">{initial_password}</code></p>
+                            </div>
+
+                            <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                                <p style="margin: 0;"><strong>⚠️ Important:</strong> On your first login, you will be required to complete your profile. This information is immutable and cannot be changed after submission, so please ensure all details are accurate.</p>
+                            </div>
+
+                            <h3 style="color: #273171;">Next Steps:</h3>
+                            <ol style="line-height: 1.8;">
+                                <li>Sign in using your Member ID and initial password</li>
+                                <li>Complete your profile with accurate information</li>
+                                <li>Review the profile carefully before submitting (cannot be changed)</li>
+                                <li>Change your password to something memorable</li>
+                            </ol>
+
+                            <p style="text-align: center; margin-top: 30px;">
+                                <a href="{settings.frontend_url}/signin" style="background-color: #0ec434; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Sign In Now</a>
+                            </p>
+
+                            <p style="margin-top: 30px; color: #666; font-size: 14px;">For assistance, please contact us at {settings.admin_email}</p>
+                        </div>
+                        <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+                            <p>© 2025 GGDS Benevolent Fund. All rights reserved.</p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+            """
+        else:
+            # Original welcome email for self-registered members (deprecated in PIVOT v2.0)
+            html = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #0ec434;">Welcome to GGDS Benevolent Fund</h2>
+                        <p>Dear {member_name},</p>
+                        <p>Your registration has been successfully received!</p>
+                        <p><strong>Your Member ID:</strong> {member_id}</p>
+                        <p>You can now access your dashboard and submit support cases when needed.</p>
+                        <p>If you have any questions, please contact us at {settings.admin_email}</p>
+                        <br>
+                        <p>Best regards,<br>GGDS Benevolent Fund Team</p>
+                    </div>
+                </body>
+            </html>
+            """
+
         return await self.send_email(to_email, subject, html)
 
     async def send_case_confirmation(

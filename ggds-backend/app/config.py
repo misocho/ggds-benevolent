@@ -22,16 +22,28 @@ class Settings(BaseSettings):
     # Frontend CORS
     frontend_url: str = "http://localhost:3000"
 
-    # Email
-    resend_api_key: Optional[str] = None
-    email_from: str = "noreply@ggds.org"
-    admin_email: str = "admin@ggds.org"
+    # Email (Hostinger SMTP)
+    smtp_host: str = "smtp.hostinger.com"
+    smtp_port: int = 587
+    smtp_username: str
+    smtp_password: str
+    smtp_use_tls: bool = True
+    email_from: str = "lifeline@ggdi.net"
+    admin_email: str = "lifeline@ggdi.net"
 
-    # AWS S3
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    aws_region: str = "eu-west-1"
-    aws_s3_bucket: str
+    # Digital Ocean Spaces (S3 compatible)
+    spaces_region: str = "fra1"
+    spaces_bucket: str
+    spaces_access_key: str
+    spaces_secret_key: str
+    spaces_endpoint: Optional[str] = None  # Auto-generated from region if not provided
+
+    @property
+    def spaces_endpoint_url(self) -> str:
+        """Generate Digital Ocean Spaces endpoint URL"""
+        if self.spaces_endpoint:
+            return self.spaces_endpoint
+        return f"https://{self.spaces_region}.digitaloceanspaces.com"
 
     # Optional
     sentry_dsn: Optional[str] = None
