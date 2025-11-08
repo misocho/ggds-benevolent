@@ -127,11 +127,11 @@ services:
 
       # Digital Ocean Spaces - Set manually in DO dashboard
       - key: SPACES_REGION
-        value: fra1
+        value: sfo3
         scope: RUN_TIME
 
       - key: SPACES_BUCKET
-        value: ggds-benevolent-fund-files
+        value: ggds-benevolent
         scope: RUN_TIME
 
       - key: SPACES_ACCESS_KEY
