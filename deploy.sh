@@ -118,8 +118,16 @@ rm /tmp/ggds-deploy.tar.gz
 
 echo -e "${GREEN}✓${NC} Package extracted"
 
+# Rename .env.production to .env for docker-compose to read
+if [ -f .env.production ]; then
+    cp .env.production .env
+    echo -e "${GREEN}✓${NC} Environment file configured"
+else
+    echo -e "${RED}✗${NC} Warning: .env.production not found"
+fi
+
 # Stop existing containers
-if docker-compose ps | grep -q "Up"; then
+if docker-compose ps 2>/dev/null | grep -q "Up"; then
     echo -e "${YELLOW}→${NC} Stopping existing containers..."
     docker-compose down
     echo -e "${GREEN}✓${NC} Containers stopped"
