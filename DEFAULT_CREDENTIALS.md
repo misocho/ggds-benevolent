@@ -1,11 +1,11 @@
 # Default Login Credentials
 
-After running `./deploy-manual.sh`, the database is automatically seeded with test users.
+After running `./deploy-manual.sh`, the database is automatically seeded with a superuser account.
 
 ## 🔐 Superuser Account
 
-**Email:** `admin@ggdi.net`
-**Password:** `Admin@123`
+**Email:** `lifeline@ggdi.net`
+**Password:** `adminggds`
 **Role:** Administrator (full access)
 
 Use this account to:
@@ -13,31 +13,7 @@ Use this account to:
 - Manage users and members
 - Configure system settings
 - Approve/reject cases
-
----
-
-## 👤 Sample User Account
-
-**Email:** `user@ggdi.net`
-**Password:** `User@123`
-**Role:** Regular user
-
-Use this account to:
-- Test member registration
-- Submit cases
-- View member dashboard
-
----
-
-## 🔄 Customizing Passwords
-
-You can customize the default passwords by setting environment variables before deployment:
-
-```bash
-export ADMIN_PASSWORD="YourSecureAdminPassword"
-export USER_PASSWORD="YourSecureUserPassword"
-./deploy-manual.sh
-```
+- Create additional users
 
 ---
 
@@ -62,13 +38,13 @@ After deployment, access the application at:
 
 ## 📝 Testing Checklist
 
-- [ ] Login with superuser account
+- [ ] Login with superuser account (lifeline@ggdi.net)
 - [ ] Access admin dashboard
 - [ ] Create a new member
-- [ ] Login with sample user account
+- [ ] Create additional user accounts
 - [ ] Submit a test case
-- [ ] Verify email notifications (if configured)
-- [ ] Test file uploads
+- [ ] Verify email notifications (SMTP configured)
+- [ ] Test file uploads (Digital Ocean Spaces)
 - [ ] Check all dashboard features
 
 ---
