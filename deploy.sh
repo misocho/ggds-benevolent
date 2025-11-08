@@ -91,6 +91,7 @@ COPYFILE_DISABLE=1 tar -czf /tmp/ggds-deploy.tar.gz \
     --exclude='.env.local' \
     docker-compose.yml \
     .env.production \
+    migrate.sh \
     ggds-backend \
     ggds-benevolent-fund
 
@@ -144,6 +145,10 @@ docker-compose up -d
 # Wait for services to be healthy
 echo -e "${YELLOW}→${NC} Waiting for services to be healthy..."
 sleep 10
+
+# Run migrations
+echo -e "${YELLOW}→${NC} Running database migrations..."
+./migrate.sh
 
 # Check health
 if docker-compose ps | grep -q "healthy"; then

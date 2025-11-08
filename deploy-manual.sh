@@ -80,17 +80,9 @@ docker-compose up -d
 echo -e "${YELLOW}→${NC} Waiting for services to start..."
 sleep 15
 
-# Wait for database to be ready
-echo -e "${YELLOW}→${NC} Waiting for database migrations to complete..."
-sleep 5
-
-# Check migration status
-echo -e "${YELLOW}→${NC} Verifying database migrations..."
-if docker-compose exec -T backend alembic current 2>/dev/null; then
-    echo -e "${GREEN}✓${NC} Database migrations completed successfully"
-else
-    echo -e "${YELLOW}⚠${NC}  Could not verify migrations (backend may still be starting)"
-fi
+# Run migrations
+echo -e "${YELLOW}→${NC} Running database migrations..."
+./migrate.sh
 
 # Check status
 echo ""
