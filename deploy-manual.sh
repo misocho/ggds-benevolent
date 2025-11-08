@@ -84,6 +84,10 @@ sleep 15
 echo -e "${YELLOW}→${NC} Initializing database..."
 ./init-db.sh
 
+# Seed database (create superuser and sample data)
+echo -e "${YELLOW}→${NC} Seeding database..."
+./seed-db.sh
+
 # Check status
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

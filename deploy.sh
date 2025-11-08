@@ -92,6 +92,7 @@ COPYFILE_DISABLE=1 tar -czf /tmp/ggds-deploy.tar.gz \
     docker-compose.yml \
     .env.production \
     init-db.sh \
+    seed-db.sh \
     ggds-backend \
     ggds-benevolent-fund
 
@@ -149,6 +150,10 @@ sleep 10
 # Initialize database
 echo -e "${YELLOW}→${NC} Initializing database..."
 ./init-db.sh
+
+# Seed database
+echo -e "${YELLOW}→${NC} Seeding database..."
+./seed-db.sh
 
 # Check health
 if docker-compose ps | grep -q "healthy"; then
