@@ -80,9 +80,9 @@ docker-compose up -d
 echo -e "${YELLOW}→${NC} Waiting for services to start..."
 sleep 15
 
-# Run migrations
-echo -e "${YELLOW}→${NC} Running database migrations..."
-./migrate.sh
+# Initialize database (create tables)
+echo -e "${YELLOW}→${NC} Initializing database..."
+./init-db.sh
 
 # Check status
 echo ""
