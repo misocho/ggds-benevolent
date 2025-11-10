@@ -1,0 +1,74 @@
+services:
+  # Backend API Service
+  - type: web
+    name: ggds-backend
+    env: python
+    region: frankfurt  # Choose region closest to users
+    plan: starter  # Can upgrade to standard/pro later
+    buildCommand: "cd ggds-backend && pip install -r requirements.txt"
+    startCommand: "cd ggds-backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: APP_NAME
+        value: GGDS Benevolent Fund API
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ggds-postgres
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      - key: FRONTEND_URL
+        fromService:
+          name: ggds-frontend
+          type: web
+          property: host
+      - key: RESEND_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: EMAIL_FROM
+        value: noreply@ggds.org
+      - key: ADMIN_EMAIL
+        sync: false  # Set manually
+      - key: AWS_ACCESS_KEY_ID
+        sync: false  # Set manually
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false  # Set manually
+      - key: AWS_REGION
+        value: eu-west-1
+      - key: AWS_S3_BUCKET
+        value: ggds-benevolent-fund-files
+      - key: LOG_LEVEL
+        value: INFO
+
+  # Frontend Next.js Service
+  - type: web
+    name: ggds-frontend
+    env: node
+    region: frankfurt
+    plan: starter
+    buildCommand: "cd ggds-benevolent-fund && npm install && npm run build"
+    startCommand: "cd ggds-benevolent-fund && npm start"
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: ggds-backend
+          type: web
+          property: host
+      - key: NODE_ENV
+        value: production
+
+databases:
+  - name: ggds-postgres
+    databaseName: ggds_benevolent
+    plan: starter  # Free tier, can upgrade
+    region: frankfurt
+    postgresMajorVersion: 15
