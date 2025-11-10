@@ -68,7 +68,13 @@ fi
 echo -e "${GREEN}✓${NC} TLS parameters downloaded"
 echo ""
 
-# Step 6: Request certificates
+# Step 6: Delete existing certificates if they exist
+echo -e "${YELLOW}→${NC} Cleaning up any existing certificates for ${DOMAIN}..."
+docker-compose run --rm certbot delete --cert-name ${DOMAIN} --non-interactive 2>/dev/null || echo "No existing certificate found"
+docker-compose run --rm certbot delete --cert-name ${API_DOMAIN} --non-interactive 2>/dev/null || echo "No existing certificate found"
+echo ""
+
+# Step 7: Request certificates
 echo -e "${YELLOW}→${NC} Requesting SSL certificate for ${DOMAIN}..."
 docker-compose run --rm certbot certonly \
     --webroot \
@@ -76,7 +82,6 @@ docker-compose run --rm certbot certonly \
     --email ${EMAIL} \
     --agree-tos \
     --no-eff-email \
-    --force-renewal \
     -d ${DOMAIN} \
     -d www.${DOMAIN}
 
@@ -98,7 +103,6 @@ docker-compose run --rm certbot certonly \
     --email ${EMAIL} \
     --agree-tos \
     --no-eff-email \
-    --force-renewal \
     -d ${API_DOMAIN}
 
 if [ $? -eq 0 ]; then
@@ -112,20 +116,20 @@ else
 fi
 echo ""
 
-# Step 7: Restore full SSL configs
+# Step 8: Restore full SSL configs
 echo -e "${YELLOW}→${NC} Restoring full SSL Nginx configs..."
 cp nginx/sites/investggds.conf.ssl-backup nginx/sites/investggds.conf
 cp nginx/sites/api.investggds.conf.ssl-backup nginx/sites/api.investggds.conf
 echo -e "${GREEN}✓${NC} SSL configs restored"
 echo ""
 
-# Step 8: Restart Nginx with SSL
+# Step 9: Restart Nginx with SSL
 echo -e "${YELLOW}→${NC} Restarting Nginx with SSL configuration..."
 docker-compose restart nginx
 sleep 5
 echo ""
 
-# Step 9: Verify Nginx is running with SSL
+# Step 10: Verify Nginx is running with SSL
 echo -e "${YELLOW}→${NC} Verifying Nginx is running with SSL..."
 if docker-compose ps nginx | grep -q "Up"; then
     echo -e "${GREEN}✓${NC} Nginx is running with SSL!"
