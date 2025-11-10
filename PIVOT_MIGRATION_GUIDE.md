@@ -346,8 +346,8 @@ async def create_new_member(
     member_number = (last_member.id + 1) if last_member else 1
     member_id = f"GGDS-{member_number:04d}"  # GGDS-0001, GGDS-0002, etc.
 
-    # Generate initial password
-    initial_password = generate_random_password()
+    # Generate random initial password (not hardcoded - dynamically generated)
+    initial_password = generate_random_password()  # Random, not a secret
 
     # Create user and member
     member = await create_member_by_admin(

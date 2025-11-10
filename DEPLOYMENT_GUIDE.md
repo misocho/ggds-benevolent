@@ -208,7 +208,7 @@ db = SessionLocal()
 admin_user = User(
     id=uuid.uuid4(),
     email='admin@ggds.org',
-    hashed_password=get_password_hash('ChangeThisPassword123!'),
+    hashed_password=get_password_hash('YOUR_SECURE_PASSWORD_HERE'),
     role='admin',
     is_active=True
 )
