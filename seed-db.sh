@@ -20,53 +20,51 @@ echo -e "${YELLOW}→${NC} Creating superuser..."
 
 # Run Python script to seed database
 docker-compose exec -T backend python -c "
-import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import async_session_maker
+from app.database import SessionLocal
 from app.models.user import User
 from app.utils.security import get_password_hash
-from sqlalchemy import select
 
-async def seed_database():
-    async with async_session_maker() as session:
-        try:
-            # Check if superuser already exists
-            result = await session.execute(
-                select(User).where(User.email == 'lifeline@ggdi.net')
+def seed_database():
+    db = SessionLocal()
+    try:
+        # Check if superuser already exists
+        existing_admin = db.query(User).filter(
+            User.email == 'lifeline@ggdi.net'
+        ).first()
+
+        if existing_admin:
+            print('ℹ Superuser lifeline@ggdi.net already exists')
+        else:
+            # Create superuser
+            superuser = User(
+                email='lifeline@ggdi.net',
+                username='lifeline',
+                full_name='GGDS Lifeline',
+                hashed_password=get_password_hash('adminggds'),
+                is_active=True,
+                is_superuser=True,
+                is_verified=True
             )
-            existing_admin = result.scalar_one_or_none()
+            db.add(superuser)
+            db.commit()
+            print('✓ Created superuser: lifeline@ggdi.net')
 
-            if existing_admin:
-                print('ℹ Superuser lifeline@ggdi.net already exists')
-            else:
-                # Create superuser
-                superuser = User(
-                    email='lifeline@ggdi.net',
-                    username='lifeline',
-                    full_name='GGDS Lifeline',
-                    hashed_password=get_password_hash('adminggds'),
-                    is_active=True,
-                    is_superuser=True,
-                    is_verified=True
-                )
-                session.add(superuser)
-                print('✓ Created superuser: lifeline@ggdi.net')
+        print('')
+        print('✓ Database seeded successfully!')
+        print('')
+        print('Login Credentials:')
+        print('==================')
+        print('Email: lifeline@ggdi.net')
+        print('Password: adminggds')
 
-            await session.commit()
-            print('')
-            print('✓ Database seeded successfully!')
-            print('')
-            print('Login Credentials:')
-            print('==================')
-            print('Email: lifeline@ggdi.net')
-            print('Password: adminggds')
+    except Exception as e:
+        print(f'❌ Error seeding database: {str(e)}')
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
-        except Exception as e:
-            print(f'❌ Error seeding database: {str(e)}')
-            await session.rollback()
-            raise
-
-asyncio.run(seed_database())
+seed_database()
 "
 
 echo ""
