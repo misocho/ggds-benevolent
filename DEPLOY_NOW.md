@@ -38,6 +38,7 @@ git pull origin main
 - Stops old containers
 - Builds fresh Docker images
 - Starts all services (PostgreSQL, Backend, Frontend)
+- **Runs database migrations automatically**
 - Shows status and logs
 
 ---

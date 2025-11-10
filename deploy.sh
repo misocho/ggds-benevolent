@@ -91,6 +91,8 @@ COPYFILE_DISABLE=1 tar -czf /tmp/ggds-deploy.tar.gz \
     --exclude='.env.local' \
     docker-compose.yml \
     .env.production \
+    init-db.sh \
+    seed-db.sh \
     ggds-backend \
     ggds-benevolent-fund
 
@@ -144,6 +146,14 @@ docker-compose up -d
 # Wait for services to be healthy
 echo -e "${YELLOW}→${NC} Waiting for services to be healthy..."
 sleep 10
+
+# Initialize database
+echo -e "${YELLOW}→${NC} Initializing database..."
+./init-db.sh
+
+# Seed database
+echo -e "${YELLOW}→${NC} Seeding database..."
+./seed-db.sh
 
 # Check health
 if docker-compose ps | grep -q "healthy"; then
