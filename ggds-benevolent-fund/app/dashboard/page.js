@@ -77,7 +77,8 @@ export default function Dashboard() {
 
       // Load covered persons
       const token = localStorage.getItem('access_token')
-      const coveredPersonsResponse = await fetch('http://localhost:8000/api/covered-persons', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const coveredPersonsResponse = await fetch(`${apiUrl}/api/covered-persons`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

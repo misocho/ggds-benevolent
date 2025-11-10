@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(python3 manage.py makemigrations:*)",
+      "Bash(docker compose exec:*)",
+      "Bash(docker-compose exec:*)",
+      "Read(//Users/misocho/Playground/ggds/ggds-backend/**)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose ps:*)"
+    ],
+    "deny": []
+  }
+}
